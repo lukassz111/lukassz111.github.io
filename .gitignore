@@ -1,2 +1,7 @@
-page_src/node_modules/
-page_src/src/.vuepress/dist/
+.DS_Store
+Thumbs.db
+db.json
+*.log
+node_modules/
+public/
+.deploy*/
