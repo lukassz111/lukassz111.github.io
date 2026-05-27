@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Podziel zdjęcie na kafelki</title>
+</head>
+
+<body>
+    <div class="container">
+        <header class="print-hide">
+            <p>Wybierz zdjęcie i podziel je na kafelki</p>
+        </header>
+
+        <main>
+            <div class="print-hide">
+                <label for="imageInput" class="print-hide">Wybierz zdjęcie:</label>
+                <input id="imageInput" type="file" accept="image/*" class="print-hide">
+
+
+                <label for="cols" class="print-hide">Kolumny:</label>
+                <input id="cols" type="number" class="print-hide" value="2" min="1" style="width:80px">
+                <label for="rows" class="print-hide">Wiersze:</label>
+                <input id="rows" type="number" class="print-hide" value="2" min="1" style="width:80px">
+                <select id="format-tile" class="print-hide">
+                    <option value="A4-portrait">A4 (portret)</option>
+                </select>
+
+                <button id="splitBtn" class="print-hide">Split</button>
+
+                <canvas id="full_canvas" style="max-width: 100vh" class="print-hide"></canvas>
+            </div>
+            <div id="previews"></div>
+        </main>
+    </div>
+    <style>
+        #full_canvas {
+            display: block;
+            margin: 16px auto;
+            border: 1px solid #ccc;
+        }
+
+        #previews {
+            display: grid;
+            gap: 8px;
+            margin-top: 16px;
+            background: #f0f0f0;
+            width: fit-content;
+            margin: 0 auto;
+            max-width: 100vh;
+            display: grid;
+        }
+
+        .tile {
+            border: 1px solid #ccc;
+            object-fit: contain;
+            width: 100%;
+            height: 100%;
+        }
+
+        @media print {
+            .print-hide {
+                display: none;
+                width: 0 !important;
+                height: 0 !important;
+                overflow: hidden !important;
+            }
+
+            #previews {
+                display: block !important;
+
+            }
+
+            .tile {
+                page-break-inside: avoid;
+                break-inside: avoid;
+                margin: 0;
+                width: 100%;
+                height: auto;
+                border: none;
+                page-break-after: always;
+            }
+        }
+    </style>
+    <script>
+        const rowsInput = document.getElementById('rows');
+        const formatSelect = document.getElementById('format-tile');
+        const columnsInput = document.getElementById('cols');
+        const splitBtn = document.getElementById('splitBtn');
+        const previewsContainer = document.getElementById('previews');
+        const fullCanvas = document.getElementById('full_canvas');
+        const sizesByFormat = {
+            'A4-portrait': { width: 2480, height: 3508 },
+        };
+        const refreshTilesSettings = () => {
+            const tileSize = sizesByFormat[formatSelect.value];
+            const children = [...previewsContainer.children];
+            const canvas_full_size = {
+                width: tileSize.width * columnsInput.value,
+                height: tileSize.height * rowsInput.value,
+            };
+            canvas_full_size.width = canvas_full_size.width;
+            canvas_full_size.height = canvas_full_size.height;
+
+            previewsContainer.setAttribute('data-full-width', canvas_full_size.width);
+            previewsContainer.setAttribute('data-full-height', canvas_full_size.height);
+            children.forEach(child => child.remove());
+            { {/*  previewsContainer.style.display = 'grid';  */ } }
+            previewsContainer.style.gridTemplateColumns = `repeat(${columnsInput.value}, 1fr)`;
+            previewsContainer.style.gridTemplateRows = `repeat(${rowsInput.value}, 1fr)`;
+
+            for (let iRow = 0; iRow < rowsInput.value; iRow++) {
+                for (let iCol = 0; iCol < columnsInput.value; iCol++) {
+                    let canvas = document.createElement('canvas');
+                    canvas.classList.add('tile');
+                    canvas.style.gridColumn = `${iCol + 1}`;
+                    canvas.style.gridRow = `${iRow + 1}`;
+                    canvas.width = tileSize.width;
+                    canvas.height = tileSize.height;
+                    canvas.style.aspectRatio = `${tileSize.width} / ${tileSize.height}`;
+                    canvas.setAttribute('data-row', iRow);
+                    canvas.setAttribute('data-col', iCol);
+                    previewsContainer.appendChild(canvas);
+                }
+            }
+            const file = imageInput.files && imageInput.files[0];
+
+            if (!file) return;
+            const img = new Image();
+            img.onload = () => {
+                const imageSize = {
+                    width: img.width,
+                    height: img.height,
+                };
+                const ctx = fullCanvas.getContext('2d');
+                fullCanvas.width = canvas_full_size.width;
+                fullCanvas.height = canvas_full_size.height;
+
+                // ✅ 1. Oblicz skalę (contain)
+                const scale = Math.min(
+                    fullCanvas.width / img.width,
+                    fullCanvas.height / img.height
+                );
+
+                const newWidth = img.width * scale;
+                const newHeight = img.height * scale;
+
+                // ✅ 2. Wycentruj obraz
+                const x = (fullCanvas.width - newWidth) / 2;
+                const y = (fullCanvas.height - newHeight) / 2;
+
+                // ✅ 3. Białe tło
+                ctx.fillStyle = "white";
+                ctx.fillRect(0, 0, fullCanvas.width, fullCanvas.height);
+
+                // ✅ 4. Rysuj obraz bez przycinania
+                ctx.drawImage(img, x, y, newWidth, newHeight);
+
+                previewsContainer.querySelectorAll('.tile').forEach(child => {
+                    const col = child.getAttribute('data-col');
+                    const row = child.getAttribute('data-row');
+                    const sx = col * tileSize.width;
+                    const sy = row * tileSize.height;
+                    const sw = tileSize.width;
+                    const sh = tileSize.height;
+                    const ctxChild = child.getContext('2d');
+                    ctxChild.drawImage(ctx.canvas, sx, sy, sw, sh, 0, 0, sw, sh);
+                });
+                console.log('Image split into tiles');
+            };
+            img.src = URL.createObjectURL(file);
+        };
+        rowsInput.addEventListener('change', () => { refreshTilesSettings(); });
+        columnsInput.addEventListener('change', () => {
+            refreshTilesSettings();
+        });
+        formatSelect.addEventListener('change', () => {
+            refreshTilesSettings();
+        });
+        splitBtn.addEventListener('click', () => {
+            refreshTilesSettings();
+        });
+
+        /*  const imageInput = document.getElementById('imageInput');
+            const splitBtn = document.getElementById('splitBtn');
+            const previews = document.getElementById('previews');
+    
+            splitBtn.addEventListener('click', () => {
+                const file = imageInput.files && imageInput.files[0];
+                if (!file) return alert('Select an image first');
+                const cols = Math.max(1, parseInt(document.getElementById('cols').value) || 1);
+                const rows = Math.max(1, parseInt(document.getElementById('rows').value) || 1);
+    
+                const img = new Image();
+                img.onload = () => {
+                    previews.innerHTML = '';
+                    const tileW = Math.ceil(img.width / cols);
+                    const tileH = Math.ceil(img.height / rows);
+    
+                    for (let r = 0; r < rows; r++) {
+                        const rowDiv = document.createElement('div');
+                        rowDiv.style.display = 'flex';
+                        rowDiv.style.gap = '8px';
+                        rowDiv.style.marginTop = '8px';
+                        for (let c = 0; c < cols; c++) {
+                            const canvas = document.createElement('canvas');
+                            const ctx = canvas.getContext('2d');
+                            const sx = c * tileW;
+                            const sy = r * tileH;
+                            const sw = Math.min(tileW, img.width - sx);
+                            const sh = Math.min(tileH, img.height - sy);
+                            canvas.width = sw;
+                            canvas.height = sh;
+                            ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+                            rowDiv.appendChild(canvas);
+                        }
+                        previews.appendChild(rowDiv);
+                    }
+                };
+                img.src = URL.createObjectURL(file);
+            });  */
+    </script>
+</body>
+
+</html>
