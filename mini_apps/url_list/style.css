@@ -1,0 +1,70 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+    color: white;
+}
+body > h1 {
+    display: block;
+    margin: 0 auto;
+    width: fit-content;
+}
+
+form {
+    display: block;
+    width: fit-content;
+    margin: 0 auto;
+    padding: 8px;
+}
+fieldset {
+    border: none;
+    width: fit-content;
+    margin: 0 auto;
+    padding: 8px;
+}
+
+input,button {
+    color: white;
+    border-style: solid;
+    border-color: #6d68ca;
+    background-color: #6d68ca;
+    border-radius: 8px;
+    padding: 4px;
+    margin-block-start: 4px;
+    margin-block-end: 4px;
+}
+input:hover {
+    outline: none !important;
+    outline-offset: 0 !important;
+    box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+    border-color: aqua;
+}
+input:focus, input:focus-visible, input:focus-within {
+    outline: none !important;
+    outline-offset: 0 !important;
+    box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+    border-color: wheat;
+}
+button {
+    border-color: aqua;
+    cursor: pointer;
+    width: fit-content;
+    margin: 0 auto;
+    display: block;
+}
+button:hover {
+    outline: none !important;
+    outline-offset: 0 !important;
+    box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+    border-color: wheat;
+}
